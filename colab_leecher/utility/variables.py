@@ -100,7 +100,7 @@ class MSG:
     status_msg = Message(id=2)
 
 
-class Libtorrent:
+class qBittorrent:
     link_info = False
     pic_dwn_url = "https://picsum.photos/900/600"
 
