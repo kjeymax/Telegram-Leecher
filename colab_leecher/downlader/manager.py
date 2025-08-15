@@ -123,4 +123,4 @@ async def get_d_name(link: str):
     elif "mega.nz" in link:
         Messages.download_name = "Don't Know 🤷‍♂️ (Trying)"
     else:
-        Messages.download_name = get_Libtorrent_Name(link)
+        Messages.download_name = get_qbittorrent_Name(link)
