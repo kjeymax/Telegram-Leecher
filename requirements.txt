@@ -11,8 +11,10 @@ Pillow
 psutil
 pytz
 pyrogram
-requests
 tgcrypto
 uvloop
 yt_dlp
+libtorrent
+qbittorrent-api>=2023.4.54
+requests>=2.31.0
 libtorrent
