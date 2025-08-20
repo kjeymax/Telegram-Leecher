@@ -12,8 +12,9 @@ class BOT:
     class Setting:
         stream_upload = "Media"
         convert_video = "Yes"
-        convert_quality = "High"
+        convert_quality = "Low"
         caption = "Monospace"
+        split_video = "Split Videos"
         prefix = ""
         suffix = ""
         thumbnail = False
@@ -21,7 +22,8 @@ class BOT:
     class Options:
         stream_upload = True
         convert_video = True
-        convert_quality = True
+        convert_quality = False
+        is_split = True
         caption = "code"
         video_out = "mp4"
         custom_name = ""
@@ -98,6 +100,7 @@ class Messages:
 class MSG:
     sent_msg = Message(id=1)
     status_msg = Message(id=2)
+
 
 
 class Aria2c:
