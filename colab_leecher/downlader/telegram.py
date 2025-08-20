@@ -1,6 +1,3 @@
-# copyright 2023 © Xron Trix | https://github.com/Xrontrix10
-
-
 import logging
 from datetime import datetime
 from os import path as ospath
@@ -18,23 +15,27 @@ async def media_Identifier(link):
     try:
         message = await colab_bot.get_messages(msg_chat_id, message_id)
     except Exception as e:
-        logging.error(f"Error getting messages {e}")
+        logging.error(f"Error getting messages from Telegram: {e}")
+        return None, None  # Return None if message retrieval fails
 
+    if message is None:
+        logging.error("Message not found or couldn't be retrieved from Telegram")
+        return None, None  # Return None if message is not found or None
+    
     media = (
-        message.document  # type: ignore
-        or message.photo  # type: ignore
-        or message.video  # type: ignore
-        or message.audio  # type: ignore
-        or message.voice  # type: ignore
-        or message.video_note  # type: ignore
-        or message.sticker  # type: ignore
-        or message.animation  # type: ignore
+        message.document
+        or message.photo
+        or message.video
+        or message.audio
+        or message.voice
+        or message.video_note
+        or message.sticker
+        or message.animation
         or None
     )
     if media is None:
-        logging.error("Couldn't Download Telegram Message")
-        await cancelTask("Couldn't Download Telegram Message")
-        return
+        logging.error("No media found in the Telegram message")
+        return None, None  # Return None if no media is found in the message
     return media, message
 
 
@@ -54,10 +55,9 @@ async def download_progress(current, total):
 
 async def TelegramDownload(link, num):
     global start_time, TRANSFER_INFO
-    media, message = await media_Identifier(link) # type: ignore
+    media, message = await media_Identifier(link)
     if media is not None:
-        name = media.file_name if hasattr(  # type: ignore
-            media, "file_name") else "None"
+        name = media.file_name if hasattr(media, "file_name") else "None"
     else:
         logging.error("Couldn't Download Telegram Message")
         await cancelTask("Couldn't Download Telegram Message")
@@ -67,5 +67,5 @@ async def TelegramDownload(link, num):
     start_time = datetime.now()
     file_path = ospath.join(Paths.down_path, name)
     
-    await message.download(progress=download_progress, in_memory=False, file_name=file_path) # type: ignore
+    await message.download(progress=download_progress, in_memory=False, file_name=file_path)
     Transfer.down_bytes.append(media.file_size)
