@@ -56,6 +56,7 @@ def parse_link_options(link: str):
         elif part.startswith("--"):
             i += 1
         else:
+            # Only take the first non-option part as the URL
             if url is None:
                 url = part
             i += 1
