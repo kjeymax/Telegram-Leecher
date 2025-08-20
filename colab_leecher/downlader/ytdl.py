@@ -93,9 +93,8 @@ def YouTubeDL(url):
             logging.info(d)
 
     # Choose format based on quality setting
-    format_str = "bestvideo+bestaudio/best" if getattr(BOT.Options, "convert_quality", True) else "best"
     ydl_opts = {
-        "format": format_str,
+        "format": "bestvideo+bestaudio/best",
         "allow_multiple_video_streams": True,
         "allow_multiple_audio_streams": True,
         "writethumbnail": True,
