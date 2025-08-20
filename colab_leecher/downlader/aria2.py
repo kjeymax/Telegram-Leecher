@@ -2,6 +2,7 @@ import re
 import logging
 import subprocess
 import os
+import sys
 from datetime import datetime
 from colab_leecher.utility.helper import sizeUnit, status_bar
 from colab_leecher.utility.variables import BOT, Aria2c, Paths, Messages, BotTimes
@@ -118,7 +119,9 @@ def get_Aria2c_Name(link):
 
 
 async def on_output(output: str):
-    global link_info
+    # Ensure Aria2c.link_info is initialized
+    if not hasattr(Aria2c, "link_info"):
+        Aria2c.link_info = False
     total_size = "0B"
     progress_percentage = "0B"
     downloaded_bytes = "0B"
@@ -136,9 +139,9 @@ async def on_output(output: str):
     except Exception as do:
         logging.error(f"Could't Get Info Due to: {do}")
 
-    percentage = re.findall("\d+\.\d+|\d+", progress_percentage)[0]  # type: ignore
-    down = re.findall("\d+\.\d+|\d+", downloaded_bytes)[0]  # type: ignore
-    down_unit = re.findall("[a-zA-Z]+", downloaded_bytes)[0]
+    percentage = re.findall(r"\d+\.\d+|\d+", progress_percentage)[0]  # type: ignore
+    down = re.findall(r"\d+\.\d+|\d+", downloaded_bytes)[0]  # type: ignore
+    down_unit = re.findall(r"[a-zA-Z]+", downloaded_bytes)[0]
     if "G" in down_unit:
         spd = 3
     elif "M" in down_unit:
