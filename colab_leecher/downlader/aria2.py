@@ -74,7 +74,8 @@ async def aria2_Download(link: str, num: int):
             link,
         ]
 
-    # Run the command using subprocess.Popen
+    logging.info(f"Running aria2c command: {' '.join(command)}")  # Log command
+
     proc = subprocess.Popen(
         command, bufsize=0, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
@@ -85,14 +86,13 @@ async def aria2_Download(link: str, num: int):
         if output == b"" and proc.poll() is not None:
             break
         if output:
-            # sys.stdout.write(output.decode("utf-8"))
-            # sys.stdout.flush()
+            logging.info(f"aria2c output: {output.decode('utf-8').strip()}")  # Log output
             await on_output(output.decode("utf-8"))
 
-    # Retrieve exit code and any error output
     exit_code = proc.wait()
     error_output = proc.stderr.read()  # type: ignore
     if exit_code != 0:
+        logging.error(f"aria2c stderr: {error_output.decode('utf-8').strip()}")  # Log stderr
         if exit_code == 3:
             logging.error(f"The Resource was Not Found in {link}")
         elif exit_code == 9:
