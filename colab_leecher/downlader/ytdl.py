@@ -4,7 +4,7 @@ from asyncio import sleep
 from threading import Thread
 from os import makedirs, path as ospath
 from colab_leecher.utility.handler import cancelTask
-from colab_leecher.utility.variables import YTDL, MSG, Messages, Paths
+from colab_leecher.utility.variables import YTDL, MSG, Messages, Paths, BOT
 from colab_leecher.utility.helper import getTime, keyboard, sizeUnit, status_bar, sysINFO
 
 
