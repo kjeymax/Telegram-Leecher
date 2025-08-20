@@ -69,9 +69,3 @@ async def TelegramDownload(link, num):
     
     await message.download(progress=download_progress, in_memory=False, file_name=file_path)
     Transfer.down_bytes.append(media.file_size)
-
-# Additional imports and global variables might be here...
-
-# Additional functions and code might be here...
-
-# Main code execution might be here...
