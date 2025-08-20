@@ -215,11 +215,11 @@ async def cancelTask(Reason: str):
                         [
                             InlineKeyboardButton(  # Opens a web URL
                                 "Channel 📣",
-                                url="https://t.me/Colab_Leecher",
+                                url="https://t.me/h_donghua",
                             ),
                             InlineKeyboardButton(  # Opens a web URL
                                 "Group 💬",
-                                url="https://t.me/Colab_Leecher_Discuss",
+                                url="https://t.me/hdonghuagroup",
                             ),
                         ],
                     ]
@@ -246,11 +246,13 @@ async def SendLogs(is_leech: bool):
     )
 
     last_text = (
-        f"\n\n<b>#{(BOT.Mode.mode).upper()}_COMPLETE 🔥</b>\n\n"
+        f"\n\n<b>UPLOAD COMPLETE ✅</b>\n\n"
         + f"╭<b>📛 Name » </b><code>{Messages.download_name}</code>\n"
         + f"├<b>📦 Size » </b><code>{size}</code>\n"
         + file_count
-        + f"╰<b>🍃 Saved Time »</b> <code>{getTime((datetime.now() - BotTimes.start_time).seconds)}</code>"
+        + f"├<b>🍃 Saved Time »</b> <code>{getTime((datetime.now() - BotTimes.start_time).seconds)}</code>\n"
+        + f"╰<b>⚡️ Upload by »</b>@h_donghua "
+
     )
 
     if BOT.State.task_going:
@@ -263,18 +265,18 @@ async def SendLogs(is_leech: bool):
                 [
                     [
                         InlineKeyboardButton(
-                            "Git Repo 🪲",
-                            url="https://github.com/XronTrix10/Telegram-Leecher",
+                            "Website  🪲",
+                            url="https://www.h-donghua.xyz",
                         ),
                     ],
                     [
                         InlineKeyboardButton(  # Opens a web URL
                             "Channel 📣",
-                            url="https://t.me/Colab_Leecher",
+                            url="https://t.me/h_donghua",
                         ),
                         InlineKeyboardButton(  # Opens a web URL
                             "Group 💬",
-                            url="https://t.me/Colab_Leecher_Discuss",
+                            url="https://t.me/hdonghuagroup",
                         ),
                     ],
                 ]
