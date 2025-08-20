@@ -33,14 +33,48 @@ def is_torrent_or_magnet(link: str):
     return link.endswith(".torrent") or link.startswith("magnet:")
 
 
+def parse_link_options(link: str):
+    """
+    Parse link for --header and --out options.
+    Returns: (url, headers: list, out: str or None)
+    """
+    import shlex
+
+    parts = shlex.split(link)
+    url = None
+    headers = []
+    out = None
+    i = 0
+    while i < len(parts):
+        part = parts[i]
+        if part == "--header" and i + 1 < len(parts):
+            headers.append(parts[i + 1])
+            i += 2
+        elif part == "--out" and i + 1 < len(parts):
+            out = parts[i + 1]
+            i += 2
+        elif part.startswith("--"):
+            i += 1
+        else:
+            if url is None:
+                url = part
+            i += 1
+    return url, headers, out
+
+
 async def aria2_Download(link: str, num: int):
     global BotTimes, Messages
-    name_d = get_Aria2c_Name(link)
+    # Parse link for custom options
+    url, headers, out = parse_link_options(link)
+    if url is None:
+        logging.error("No valid URL found in link")
+        return
+    name_d = get_Aria2c_Name(url if out is None else out)
     BotTimes.task_start = datetime.now()
     Messages.status_head = f"<b>📥 DOWNLOADING FROM » </b><i>🔗Link {str(num).zfill(2)}</i>\n\n<b>🏷️ Name » </b><code>{name_d}</code>\n"
 
     # Detect torrent/magnet and set optimal flags
-    if is_torrent_or_magnet(link):
+    if is_torrent_or_magnet(url):
         command = [
             "aria2c",
             "--enable-dht=true",
@@ -59,7 +93,6 @@ async def aria2_Download(link: str, num: int):
             f"--bt-tracker={TRACKER_STRING}",
             "-d",
             Paths.down_path,
-            link,
         ]
     else:
         command = [
@@ -71,8 +104,16 @@ async def aria2_Download(link: str, num: int):
             "--console-log-level=notice",
             "-d",
             Paths.down_path,
-            link,
         ]
+
+    # Add custom headers
+    for h in headers:
+        command += ["--header", h]
+    # Add custom output filename
+    if out:
+        command += ["-o", out]
+    # Add the url at the end
+    command.append(url)
 
     logging.info(f"Running aria2c command: {' '.join(command)}")  # Log command
 
