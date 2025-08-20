@@ -24,7 +24,7 @@ from colab_leecher.utility.variables import (
     BotTimes,
     Messages,
     Paths,
-    qBittorrent,
+    Aria2c,
     Transfer,
     TaskError,
 )
@@ -102,7 +102,7 @@ async def taskScheduler():
     Messages.link_p = str(DUMP_ID)[4:]
 
     try:
-        system(f"aria2c -d {Paths.WORK_PATH} -o Hero.jpg {qBittorrent.pic_dwn_url}")
+        system(f"aria2c -d {Paths.WORK_PATH} -o Hero.jpg {Aria2c.pic_dwn_url}")
     except Exception:
         Paths.HERO_IMAGE = Paths.DEFAULT_HERO
 
