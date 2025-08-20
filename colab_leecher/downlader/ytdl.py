@@ -97,7 +97,7 @@ def YouTubeDL(url):
         "allow_multiple_video_streams": True,
         "allow_multiple_audio_streams": True,
         "writethumbnail": True,
-        "--concurrent-fragments": 4 , # Set the maximum number of concurrent fragments
+        "concurrent_fragment_downloads": 4 , # Set the maximum number of concurrent fragments
         "allow_playlist_files": True,
         "overwrites": True,
         "postprocessors": [{"key": "FFmpegVideoConvertor", "preferedformat": "mp4"}],
