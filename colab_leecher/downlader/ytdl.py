@@ -95,15 +95,13 @@ def YouTubeDL(url):
     # Choose format based on quality setting
     ydl_opts = {
         "format": "bestvideo+bestaudio/best",
-        "allow_multiple_video_streams": True,
-        "allow_multiple_audio_streams": True,
+        "merge_output_format": "mp4",  # same as --merge-output-format mp4
         "writethumbnail": True,
         "concurrent_fragment_downloads": 4,  # Set the maximum number of concurrent fragments
-        "allow_playlist_files": True,
         "overwrites": True,
-        "postprocessors": [{"key": "FFmpegVideoConvertor", "preferedformat": "mp4"}],
         "progress_hooks": [my_hook],
-        "writesubtitles": "srt",  # Enable subtitles download
+        "writesubtitles": "true",
+        "subtitleslangs": ["all"],# Enable subtitles download
         "extractor_args": {"subtitlesformat": "srt"},  # Extract subtitles in SRT format
         "logger": MyLogger(),
         "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
