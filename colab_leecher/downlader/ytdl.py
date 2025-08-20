@@ -92,12 +92,14 @@ def YouTubeDL(url):
         else:
             logging.info(d)
 
+    # Choose format based on quality setting
+    format_str = "bestvideo+bestaudio/best" if getattr(BOT.Options, "convert_quality", True) else "best"
     ydl_opts = {
-        "format": "best",
+        "format": format_str,
         "allow_multiple_video_streams": True,
         "allow_multiple_audio_streams": True,
         "writethumbnail": True,
-        "concurrent_fragment_downloads": 4 , # Set the maximum number of concurrent fragments
+        "concurrent_fragment_downloads": 4,  # Set the maximum number of concurrent fragments
         "allow_playlist_files": True,
         "overwrites": True,
         "postprocessors": [{"key": "FFmpegVideoConvertor", "preferedformat": "mp4"}],
@@ -105,6 +107,7 @@ def YouTubeDL(url):
         "writesubtitles": "srt",  # Enable subtitles download
         "extractor_args": {"subtitlesformat": "srt"},  # Extract subtitles in SRT format
         "logger": MyLogger(),
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
