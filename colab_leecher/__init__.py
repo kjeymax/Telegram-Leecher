@@ -1,7 +1,7 @@
 # copyright 2023 © Xron Trix | https://github.com/Xrontrix10
 
-import logging, json
-from uvloop import install
+import asyncio, logging, json
+# from uvloop import install
 from pyrogram.client import Client
 
 # Read the dictionary from the txt file
@@ -17,6 +17,13 @@ DUMP_ID = credentials["DUMP_ID"]
 
 logging.basicConfig(level=logging.INFO)
 
-install()
+
+#install()
+
+# ensure event loop exists before using Pyrogram
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
 
 colab_bot = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
