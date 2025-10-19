@@ -347,7 +347,7 @@ async def handle_options(client, callback_query):
         try:
             await BOT.TASK
         finally:
-            BOT.State.task_going = False 
+            BOT.State.task_going = False  #<-- task crashes.
 
     # If user Wants to Stop The Task
     elif callback_query.data == "cancel":
