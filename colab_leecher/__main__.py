@@ -1,5 +1,5 @@
 # copyright 2023 © Xron Trix | https://github.com/Xrontrix10
-
+#Copyright (C) 2025 Kjeymax- https://github.com/kjeymax/Telegram-Leecher
 
 import logging, os
 from pyrogram import filters
@@ -344,8 +344,10 @@ async def handle_options(client, callback_query):
         BotTimes.start_time = datetime.now()
         event_loop = get_event_loop()
         BOT.TASK = event_loop.create_task(taskScheduler())  # type: ignore
-        await BOT.TASK
-        BOT.State.task_going = False
+        try:
+            await BOT.TASK
+        finally:
+            BOT.State.task_going = False 
 
     # If user Wants to Stop The Task
     elif callback_query.data == "cancel":
