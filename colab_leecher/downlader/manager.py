@@ -115,8 +115,17 @@ async def get_d_name(link: str):
         meta = getFileMetadata(id)
         Messages.download_name = meta["name"]
     elif "t.me" in link:
-        media, _ = await media_Identifier(link)
-        Messages.download_name = media.file_name if hasattr(media, "file_name") else "None"
+        media, message = await media_Identifier(link)
+        if hasattr(media, "file_name") and media.file_name:
+            Messages.download_name = media.file_name
+        elif message and message.media:
+            media_type = message.media.name.lower()
+            ext = ""
+            if hasattr(media, "mime_type") and media.mime_type:
+                ext = f".{media.mime_type.split('/')[-1]}"
+            Messages.download_name = f"telegram_{message.id}_{media_type}{ext}"
+        else:
+            Messages.download_name = "None"
     elif "youtube.com" in link or "youtu.be" in link:
         Messages.download_name = await get_YT_Name(link)
     elif "mega.nz" in link:
