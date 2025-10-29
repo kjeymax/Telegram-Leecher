@@ -1,4 +1,5 @@
 # copyright 2023 © Xron Trix | https://github.com/Xrontrix10
+# copyright 2023 © Kavindu AJ | https://github.com/kjeymax/Telegram-Leecher
 
 
 from time import time
@@ -27,6 +28,8 @@ class BOT:
         custom_name = ""
         zip_pswd = ""
         unzip_pswd = ""
+        final_leech_path = "" # ⭐️ 
+        is_leech_folder = False # ⭐️ 
 
     class Mode:
         mode = "leech"
