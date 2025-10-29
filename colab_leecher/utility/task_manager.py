@@ -1,4 +1,5 @@
 # copyright 2023 © Xron Trix | https://github.com/Xrontrix10
+# copyright 2023 © Kavindu AJ | https://github.com/kjeymax/Telegram-Leecher
 
 
 import pytz
@@ -11,6 +12,8 @@ from colab_leecher.downlader import ytdl
 from colab_leecher import OWNER, colab_bot, DUMP_ID
 from colab_leecher.downlader.manager import calDownSize, get_d_name, downloadManager
 from colab_leecher.utility.helper import getSize, applyCustomName, keyboard, sysINFO
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from colab_leecher import OWNER
 from colab_leecher.utility.handler import (
     Leech,
     Unzip_Handler,
@@ -148,56 +151,88 @@ async def taskScheduler():
 
 
 async def Do_Leech(source, is_dir, is_ytdl, is_zip, is_unzip, is_dualzip):
+    final_path = ""
+    is_folder = True
+
     if is_dir:
-        for s in source:
-            if not ospath.exists(s):
-                logging.error("Provided directory does not exist !")
-                await cancelTask("Provided directory does not exist !")
-                return
-            Paths.down_path = s
-            if is_zip:
-                await Zip_Handler(Paths.down_path, True, False)
-                await Leech(Paths.temp_zpath, True)
-            elif is_unzip:
-                await Unzip_Handler(Paths.down_path, False)
-                await Leech(Paths.temp_unzip_path, True)
-            elif is_dualzip:
-                await Unzip_Handler(Paths.down_path, False)
-                await Zip_Handler(Paths.temp_unzip_path, True, True)
-                await Leech(Paths.temp_zpath, True)
-            else:
-                if ospath.isdir(s):
-                    await Leech(Paths.down_path, False)
-                else:
-                    Transfer.total_down_size = ospath.getsize(s)
-                    makedirs(Paths.temp_dirleech_path)
-                    shutil.copy(s, Paths.temp_dirleech_path)
-                    Messages.download_name = ospath.basename(s)
-                    await Leech(Paths.temp_dirleech_path, True)
-    else:
+        # For Dir-Leech, we process the folder and then ask for options
+        source_path = source[0]
+        if not ospath.exists(source_path):
+            logging.error("Provided directory does not exist!")
+            await cancelTask("Provided directory does not exist!")
+            return
+
+        if is_zip:
+            await Zip_Handler(source_path, True, False)
+            final_path = Paths.temp_zpath
+        elif is_unzip:
+            await Unzip_Handler(source_path, False)
+            final_path = Paths.temp_unzip_path
+        elif is_dualzip:
+            await Unzip_Handler(source_path, False)
+            await Zip_Handler(Paths.temp_unzip_path, True, True)
+            final_path = Paths.temp_zpath
+        else: # Normal Dir-Leech
+            final_path = source_path
+            is_folder = ospath.isdir(source_path)
+
+    else: # For Normal Leech (from links)
         await downloadManager(source, is_ytdl)
-
         Transfer.total_down_size = getSize(Paths.down_path)
+        applyCustomName() # Renaming files
 
-        # Renaming Files With Custom Name
-        applyCustomName()
-
-        # Preparing To Upload
         if is_zip:
             await Zip_Handler(Paths.down_path, True, True)
-            await Leech(Paths.temp_zpath, True)
+            final_path = Paths.temp_zpath
         elif is_unzip:
             await Unzip_Handler(Paths.down_path, True)
-            await Leech(Paths.temp_unzip_path, True)
+            final_path = Paths.temp_unzip_path
         elif is_dualzip:
-            print("Got into un doubled zip")
             await Unzip_Handler(Paths.down_path, True)
             await Zip_Handler(Paths.temp_unzip_path, True, True)
-            await Leech(Paths.temp_zpath, True)
-        else:
-            await Leech(Paths.down_path, True)
+            final_path = Paths.temp_zpath
+        else: # Normal Leech
+            final_path = Paths.down_path
+            is_folder = True
+    
+    # ⭐️ --- NEW POST-PROCESSING LOGIC --- ⭐️
+    # Check if the final path contains video files to offer processing options
+    
+    # Simple check: Let's assume for now if it's not a zip/unzip task, we can process it.
+    # A more advanced check would loop through files in final_path.
+    is_media_task = not (is_zip or is_unzip or is_dualzip)
+    
+    if final_path and is_media_task:
+        # Store the final path and type in a global variable to access it later
+        BOT.Options.final_leech_path = final_path
+        BOT.Options.is_leech_folder = is_folder
 
-    await SendLogs(True)
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("📝 Change Metadata", callback_data="post_process_meta")],
+            [InlineKeyboardButton("📖 Extract Subtitles", callback_data="post_process_subs")],
+            [InlineKeyboardButton("🚀 Upload As Is", callback_data="post_process_upload")]
+        ])
+
+        try:
+            # We need to delete the old status message and send a new one
+            await MSG.status_msg.delete()
+            MSG.status_msg = await colab_bot.send_message(
+                chat_id=OWNER,
+                text="✅ **Download/Processing Complete!**\n\nWhat would you like to do with the files?",
+                reply_markup=keyboard
+            )
+        except Exception as e:
+            logging.error(f"Could not send post-processing options: {e}")
+            # If we can't send options, just upload directly
+            await Leech(final_path, is_folder)
+            await SendLogs(True)
+    
+    elif final_path: # If it's a zip/unzip task, just upload
+        await Leech(final_path, is_folder)
+        await SendLogs(True)
+    
+    else:
+        await cancelTask("Failed to determine final path for leeching.")
 
 
 async def Do_Mirror(source, is_ytdl, is_zip, is_unzip, is_dualzip):
