@@ -5,13 +5,17 @@ import logging, os
 from pyrogram import filters
 from datetime import datetime
 from pyrogram.errors import BadRequest
-from asyncio import sleep, get_event_loop
+from asyncio import sleep, get_event_loop, Event
 from colab_leecher import colab_bot, OWNER
 from .utility.task_manager import taskScheduler
 from colab_leecher.utility.handler import cancelTask
 from .utility.variables import BOT, MSG, BotTimes, Paths
 from .utility.helper import isLink, setThumbnail, message_deleter
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from colab_leecher.utility.converters import change_metadata, extract_subtitles, get_mkv_info
+from colab_leecher.utility.handler import Leech, SendLogs
+import glob 
+import shutil
 
 src_request_msg = None
 
@@ -169,8 +173,9 @@ async def handle_url(client, message):
 @colab_bot.on_callback_query()
 async def handle_options(client, callback_query):
     global BOT
+    data = callback_query.data  # ⭐️ --- ADD THIS LINE --- ⭐️
 
-    if callback_query.data in ["leech", "mirror", "dir-leech"]:
+    if data in ["leech", "mirror", "dir-leech"]:
         BOT.Mode.mode = callback_query.data
         keyboard = InlineKeyboardMarkup(
             [
@@ -349,10 +354,110 @@ async def handle_options(client, callback_query):
         finally:
             BOT.State.task_going = False  #<-- task crashes.
 
-    # If user Wants to Stop The Task
-    elif callback_query.data == "cancel":
-        await cancelTask("User Cancelled !")
+    # ⭐️ --- NEW: Post-Processing Callback Handlers --- ⭐️
+    elif data == "post_process_upload":
+        await callback_query.message.delete()
 
+        # ⭐️ --- FIX: START TASK STATE --- ⭐️
+        BOT.State.task_going = True
+
+        upload_finished = Event()
+        await Leech(BOT.Options.final_leech_path, BOT.Options.is_leech_folder, upload_finished)
+        await upload_finished.wait()
+        await SendLogs(True)
+
+        # ⭐️ --- FIX: END TASK STATE --- ⭐️
+        BOT.State.task_going = False
+
+    elif data == "post_process_meta":
+
+        # ⭐️ --- FIX: START TASK STATE --- ⭐️
+        BOT.State.task_going = True
+
+        await callback_query.message.edit_text("🔎 *Searching for video file to process...*")
+        leech_path = BOT.Options.final_leech_path
+        video_files = [f for f in glob.glob(os.path.join(leech_path, '*.*')) if f.lower().endswith(('.mkv', '.mp4', '.webm'))]
+
+        if not video_files:
+            await callback_query.message.edit_text("❌ **Error:** No video file found to change metadata.")
+            return
+            
+        video_file = video_files[0]
+        
+        new_metadata = {
+            "title": f"Encoded by {OWNER}",
+            "comment": "Downloaded via @YourBotUsername",
+            "encoder": "Kavindu AJ"
+        }
+        
+        processed_path = os.path.join(Paths.WORK_PATH, "processed")
+        if os.path.exists(processed_path): shutil.rmtree(processed_path)
+        os.makedirs(processed_path, exist_ok=True)
+        
+        base_name = os.path.basename(video_file)
+        output_file = os.path.join(processed_path, f"meta_{base_name}")
+
+        await callback_query.message.edit_text("📝 *Applying new metadata... This might take a moment.*")
+        success = change_metadata(video_file, output_file, new_metadata)
+        
+        upload_finished = Event()
+        
+        if success:
+            await callback_query.message.edit_text("✅ **Metadata changed successfully!**\nNow uploading the new video file...")
+            await Leech(processed_path, True, upload_finished) 
+        else:
+            await callback_query.message.edit_text("❌ **Failed to change metadata.** Uploading the original file instead.")
+            await Leech(leech_path, BOT.Options.is_leech_folder, upload_finished)
+
+        await upload_finished.wait()
+        await SendLogs(True)
+
+        # ⭐️ --- FIX: END TASK STATE --- ⭐️
+        BOT.State.task_going = False
+
+    elif data == "post_process_subs":
+
+        # ⭐️ --- FIX: START TASK STATE --- ⭐️
+        BOT.State.task_going = True
+
+
+        await callback_query.message.edit_text("🔎 *Searching for subtitles...*")
+        leech_path = BOT.Options.final_leech_path
+        video_files = [f for f in glob.glob(os.path.join(leech_path, '*.*')) if f.lower().endswith(('.mkv', '.mp4'))]
+
+        if not video_files:
+            await callback_query.message.edit_text("❌ **Error:** No video file found.")
+            return
+       
+        video_file = video_files[0]
+       
+        final_upload_path = os.path.join(Paths.WORK_PATH, "final_upload")
+        if os.path.exists(final_upload_path): shutil.rmtree(final_upload_path)
+        os.makedirs(final_upload_path, exist_ok=True)
+       
+        for vf in video_files: shutil.copy(vf, final_upload_path)
+           
+        extracted_sub_file = extract_subtitles(video_file, 2, final_upload_path)
+       
+        if extracted_sub_file:
+            await callback_query.message.edit_text("✅ **Subtitle Extracted!** Uploading video and subtitle...")
+        else:
+            await callback_query.message.edit_text("⚠️ **Warning:** Could not extract subtitles. Uploading video only.")
+       
+        upload_finished = Event()
+        await Leech(final_upload_path, True, upload_finished)
+        await upload_finished.wait()
+        try:
+            await callback_query.message.reply_text("`DEBUG:` Leech function finished. Now calling `SendLogs`.", parse_mode="markdown")
+        except Exception as e:
+            logging.error(f"Could not send debug message: {e}")        
+        await SendLogs(True)
+
+    # ⭐️ --- FIX: END TASK STATE --- ⭐️
+        BOT.State.task_going = False       
+
+    elif data == "cancel":
+        await cancelTask("User Cancelled !")
 
 @colab_bot.on_message(filters.photo & filters.private)
 async def handle_image(client, message):
