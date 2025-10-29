@@ -22,7 +22,8 @@
 [![Watch It](https://img.youtube.com/vi/6LvYd-oO3U0/0.jpg)](https://www.youtube.com/watch?v=6LvYd-oO3U0)
 
 ## **💡 Features**
-
+- Hybrid Download Engine (Libtorrent + Aria2)
+- High-Performance Settings for libtorrent
 - Easy To Use With Bot Commands ( Update 🔥 )
 - Powerful Video Converter, Convert Videos to mp4 / mkv ( New 🔥)
 - Get Restricted Content From Telegram ( Beta Stage )
