@@ -1,5 +1,6 @@
 # copyright 2023 © Xron Trix | https://github.com/Xrontrix10
 !pip install PyDrive
+!pip install nest_asyncio
 
 # @title 🖥️ Main Colab Leech Code
 
