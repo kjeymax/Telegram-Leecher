@@ -8,7 +8,7 @@
 
 ## **📖 Click To Open The Notebook**
 
-<a href="https://colab.research.google.com/drive/19plANlhc-U2b8oo8pH_CMtIaqvaz4qmB?usp=sharing" target="_parent"><img src="https://user-images.githubusercontent.com/125879861/255389999-a0d261cf-893a-46a7-9a3d-2bb52811b997.png" alt="Open In Colab" width=200px/></a>
+<a href="https://colab.research.google.com/drive/1YMuww_v_mPuHJ6ucqyffdtdeAHdz-rA1?usp=sharing" target="_parent"><img src="https://user-images.githubusercontent.com/125879861/255389999-a0d261cf-893a-46a7-9a3d-2bb52811b997.png" alt="Open In Colab" width=200px/></a>
 
 
 ## 🎓 **How To Deploy**
