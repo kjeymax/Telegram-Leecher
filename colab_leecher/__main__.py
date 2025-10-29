@@ -28,7 +28,7 @@ async def start(client, message):
         [
             [
                 InlineKeyboardButton(
-                    "Repository 🦄", url="https://github.com/XronTrix10/Telegram-Leecher"
+                    "Repository 🦄", url="https://github.com/kjeymax/Telegram-Leecher/"
                 ),
                 InlineKeyboardButton("Support 💝", url="https://t.me/Colab_Leecher"),
             ],
