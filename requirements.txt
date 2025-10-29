@@ -2,6 +2,7 @@ asyncio
 google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
+numpy==1.26.4
 GPUtil
 aiohttp
 moviepy
