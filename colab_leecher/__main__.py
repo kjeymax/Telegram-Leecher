@@ -173,7 +173,7 @@ async def handle_url(client, message):
 @colab_bot.on_callback_query()
 async def handle_options(client, callback_query):
     global BOT
-    data = callback_query.data  # ⭐️ --- ADD THIS LINE --- ⭐️
+    data = callback_query.data  # ⭐️ 
 
     if data in ["leech", "mirror", "dir-leech"]:
         BOT.Mode.mode = callback_query.data
@@ -374,7 +374,7 @@ async def handle_options(client, callback_query):
         # ⭐️ --- FIX: START TASK STATE --- ⭐️
         BOT.State.task_going = True
 
-        await callback_query.message.edit_text("🔎 *Searching for video file to process...*")
+        await callback_query.message.edit_text("🔎 **Searching for video file to process...**")
         leech_path = BOT.Options.final_leech_path
         video_files = [f for f in glob.glob(os.path.join(leech_path, '*.*')) if f.lower().endswith(('.mkv', '.mp4', '.webm'))]
 
@@ -397,7 +397,7 @@ async def handle_options(client, callback_query):
         base_name = os.path.basename(video_file)
         output_file = os.path.join(processed_path, f"meta_{base_name}")
 
-        await callback_query.message.edit_text("📝 *Applying new metadata... This might take a moment.*")
+        await callback_query.message.edit_text("📝 **Applying new metadata... This might take a moment.**")
         success = change_metadata(video_file, output_file, new_metadata)
         
         upload_finished = Event()
