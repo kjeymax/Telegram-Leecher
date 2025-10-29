@@ -1,11 +1,12 @@
 # copyright 2023 © Xron Trix | https://github.com/Xrontrix10
+# copyright 2023 © Kavindu AJ | https://github.com/kjeymax/Telegram-Leecher
 
 
 import os
 import shutil
 import logging
 import pathlib
-from asyncio import sleep
+from asyncio import sleep, Event
 from time import time
 from colab_leecher import OWNER, colab_bot
 from natsort import natsorted
@@ -38,97 +39,96 @@ from colab_leecher.utility.helper import (
 )
 
 
-async def Leech(folder_path: str, remove: bool):
+# ⭐️ --- DEFINITION CHANGED --- ⭐️
+async def Leech(folder_path: str, remove: bool, upload_event: Event = None):
     global BOT, BotTimes, Messages, Paths, Transfer
-    files = [str(p) for p in pathlib.Path(folder_path).glob("**/*") if p.is_file()]
-    for f in natsorted(files):
-        file_path = ospath.join(folder_path, f)
+    
+    try:
+        # --- Step 1: Initial file processing (like video conversion) ---
+        files_to_process = [str(p) for p in pathlib.Path(folder_path).glob("**/*") if p.is_file()]
+        for f in natsorted(files_to_process):
+            if BOT.Options.convert_video and fileType(f) == "video":
+                await videoConverter(f)
 
-        # Converting Video Files
-        if BOT.Options.convert_video and fileType(file_path) == "video":
-            file_path = await videoConverter(file_path)
+        # --- Step 2: Recalculate total size and get final file list ---
+        Transfer.total_down_size = getSize(folder_path)
+        final_files_to_upload = [str(p) for p in pathlib.Path(folder_path).glob("**/*") if p.is_file()]
 
-    Transfer.total_down_size = getSize(folder_path)
+        # --- Step 3: Loop through files and upload them ---
+        for file_path in natsorted(final_files_to_upload):
+            leech_was_splitted = await sizeChecker(file_path, remove)
 
-    files = [str(p) for p in pathlib.Path(folder_path).glob("**/*") if p.is_file()]
-    for f in natsorted(files):
-        file_path = ospath.join(folder_path, f)
+            if leech_was_splitted:  # File was splitted into multiple parts
+                if ospath.exists(file_path) and remove:
+                    os.remove(file_path)
 
-        leech = await sizeChecker(file_path, remove)
+                split_parts = natsorted(os.listdir(Paths.temp_zpath))
+                for i, part_name in enumerate(split_parts):
+                    part_path = ospath.join(Paths.temp_zpath, part_name)
+                    new_part_path = shortFileName(part_path)
+                    os.rename(part_path, new_part_path)
 
-        if leech:  # File was splitted
-            if ospath.exists(file_path) and remove:
-                os.remove(file_path)  # Delete original Big Zip file
+                    BotTimes.current_time = time()
+                    Messages.status_head = f"<b>📤 UPLOADING SPLIT » {i + 1} OF {len(split_parts)}</b>\n\n<code>{part_name}</code>\n"
+                    try:
+                        await MSG.status_msg.edit_text(
+                            text=Messages.task_msg + Messages.status_head + "\n⏳ __Starting.....__" + sysINFO(),
+                            reply_markup=keyboard(),
+                        )
+                    except Exception as d:
+                        logging.info(d)
+                    
+                    await upload_file(new_part_path, part_name)
+                    Transfer.up_bytes.append(os.stat(new_part_path).st_size)
+                
+                if os.path.exists(Paths.temp_zpath):
+                    shutil.rmtree(Paths.temp_zpath)
 
-            dir_list = natsorted(os.listdir(Paths.temp_zpath))
+            else: # Single file (not splitted)
+                if not ospath.exists(Paths.temp_files_dir):
+                    makedirs(Paths.temp_files_dir)
+                
+                # Use shutil.copy to handle files safely
+                temp_file_path = shutil.copy(file_path, Paths.temp_files_dir)
+                
+                file_name = ospath.basename(temp_file_path)
+                new_path = shortFileName(temp_file_path)
+                os.rename(temp_file_path, new_path)
 
-            count = 1
-
-            for dir_path in dir_list:
-                short_path = ospath.join(Paths.temp_zpath, dir_path)
-                file_name = ospath.basename(short_path)
-                new_path = shortFileName(short_path)
-                os.rename(short_path, new_path)
                 BotTimes.current_time = time()
-                Messages.status_head = f"<b>📤 UPLOADING SPLIT » {count} OF {len(dir_list)} Files</b>\n\n<code>{file_name}</code>\n"
+                Messages.status_head = f"<b>📤 UPLOADING » </b>\n\n<code>{file_name}</code>\n"
                 try:
-                    MSG.status_msg = await MSG.status_msg.edit_text(
-                        text=Messages.task_msg
-                        + Messages.status_head
-                        + "\n⏳ __Starting.....__"
-                        + sysINFO(),
+                    await MSG.status_msg.edit_text(
+                        text=Messages.task_msg + Messages.status_head + "\n⏳ __Starting.....__" + sysINFO(),
                         reply_markup=keyboard(),
                     )
                 except Exception as d:
-                    logging.info(d)
+                    logging.error(f"Error updating status bar: {d}")
+                
+                file_size = os.stat(new_path).st_size
                 await upload_file(new_path, file_name)
-                Transfer.up_bytes.append(os.stat(new_path).st_size)
+                Transfer.up_bytes.append(file_size)
 
-                count += 1
+                # Clean up the original file if remove is True
+                if remove and ospath.exists(file_path):
+                    # Be careful not to delete the source if it's the same as the upload path (e.g., Dir-Leech)
+                    if folder_path != file_path:
+                        os.remove(file_path)
+    
+    finally:
+        # --- Step 4: Final cleanup and signaling ---
+        if remove and ospath.exists(folder_path):
+            shutil.rmtree(folder_path)
+        if ospath.exists(Paths.thumbnail_ytdl):
+            shutil.rmtree(Paths.thumbnail_ytdl)
+        if ospath.exists(Paths.temp_files_dir):
+            shutil.rmtree(Paths.temp_files_dir)
+        
+        # ⭐️ --- SIGNAL THAT THE FUNCTION IS DONE --- ⭐️
+        if upload_event:
+            logging.info("Leech function is complete, setting the event.")
+            upload_event.set()
 
-            shutil.rmtree(Paths.temp_zpath)
-
-        else:
-            if not ospath.exists(Paths.temp_files_dir): # Create Directory
-                makedirs(Paths.temp_files_dir)
-
-            if not remove:  # Copy To Temp Dir for Renaming Purposes
-                file_path = shutil.copy(file_path, Paths.temp_files_dir)
-            file_name = ospath.basename(file_path)
-            # Trimming filename upto 50 chars
-            new_path = shortFileName(file_path)
-            os.rename(file_path, new_path)
-            BotTimes.current_time = time()
-            Messages.status_head = (
-                f"<b>📤 UPLOADING » </b>\n\n<code>{file_name}</code>\n"
-            )
-            try:
-                MSG.status_msg = await MSG.status_msg.edit_text(
-                    text=Messages.task_msg
-                    + Messages.status_head
-                    + "\n⏳ __Starting.....__"
-                    + sysINFO(),
-                    reply_markup=keyboard(),
-                )
-            except Exception as d:
-                logging.error(f"Error updating status bar: {d}")
-            file_size = os.stat(new_path).st_size
-            await upload_file(new_path, file_name)
-            Transfer.up_bytes.append(file_size)
-
-            if remove:
-                if ospath.exists(new_path):
-                    os.remove(new_path)
-            else:
-                for file in os.listdir(Paths.temp_files_dir):
-                    os.remove(ospath.join(Paths.temp_files_dir, file))
-
-    if remove and ospath.exists(folder_path):
-        shutil.rmtree(folder_path)
-    if ospath.exists(Paths.thumbnail_ytdl):
-        shutil.rmtree(Paths.thumbnail_ytdl)
-    if ospath.exists(Paths.temp_files_dir):
-        shutil.rmtree(Paths.temp_files_dir)
 
 
 async def Zip_Handler(down_path: str, is_split: bool, remove: bool):
