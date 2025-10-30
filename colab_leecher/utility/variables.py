@@ -1,5 +1,4 @@
 # copyright 2023 © Xron Trix | https://github.com/Xrontrix10
-# copyright 2023 © Kavindu AJ | https://github.com/kjeymax/Telegram-Leecher
 
 
 from time import time
@@ -30,6 +29,9 @@ class BOT:
         unzip_pswd = ""
         final_leech_path = "" # ⭐️ 
         is_leech_folder = False # ⭐️ 
+        # ⭐️
+        ytdl_format = "bestvideo[height<=1080]+bestaudio/best[height<=1080]" # Default
+        audio_format = None # Default (i.e., not audio-only)
 
     class Mode:
         mode = "leech"
@@ -86,6 +88,7 @@ class Paths:
     temp_files_dir = f"{WORK_PATH}/leech_temp"
     thumbnail_ytdl = f"{WORK_PATH}/ytdl_thumbnails"
     access_token = "/content/token.pickle"
+    COOKIES_PATH = "/content/Telegram-Leecher/cookies.txt"
 
 
 class Messages:
