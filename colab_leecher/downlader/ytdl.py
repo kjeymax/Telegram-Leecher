@@ -217,7 +217,6 @@ def YouTubeDL(url):
             logging.error(f"YTDL ERROR: {e}")
 
 
-# ⭐️ --- මෙම සම්පූර්ණ ශ්‍රිතය (`get_YT_Name`) ප්‍රතිස්ථාපනය (REPLACE) කරන්න --- ⭐️
 async def get_YT_Name(link):
     # දෝෂයක් (error) ආවිට task එක cancel නොකර, error එක log කර ඉදිරියට යයි
     with yt_dlp.YoutubeDL({"logger": MyLogger()}) as ydl:
