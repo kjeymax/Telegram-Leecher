@@ -1,6 +1,9 @@
 # copyright 2023 © Xron Trix | https://github.com/Xrontrix10
 #Copyright (C) 2025 Kjeymax- https://github.com/kjeymax/Telegram-Leecher
 
+# copyright 2023 © Xron Trix | https://github.com/Xrontrix10
+#Copyright (C) 2025 Kjeymax- https://github.com/kjeymax/Telegram-Leecher
+
 import logging, os
 from pyrogram import filters
 from datetime import datetime
@@ -28,7 +31,7 @@ async def start(client, message):
         [
             [
                 InlineKeyboardButton(
-                    "Repository 🦄", url="https://github.com/kjeymax/Telegram-Leecher/"
+                    "Repository 🦄", url="https://github.com/XronTrix10/Telegram-Leecher"
                 ),
                 InlineKeyboardButton("Support 💝", url="https://t.me/Colab_Leecher"),
             ],
@@ -170,10 +173,40 @@ async def handle_url(client, message):
         )
 
 
+# ⭐️ --- මෙම helper function එක අලුතින් එක් කරන්න --- ⭐️
+async def trigger_task_scheduler(callback_query):
+    """Helper function to start the main task"""
+    global BOT, MSG, BotTimes
+    await callback_query.message.delete()
+    await colab_bot.delete_messages(
+        chat_id=callback_query.message.chat.id,
+        message_ids=callback_query.message.reply_to_message_id,
+    )
+    MSG.status_msg = await colab_bot.send_message(
+        chat_id=OWNER,
+        text="#STARTING_TASK\n\n**Starting your task in a few Seconds...🦐**",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [InlineKeyboardButton("Cancel ❌", callback_data="cancel")],
+            ]
+        ),
+    )
+    BOT.State.task_going = True
+    BOT.State.started = False
+    BotTimes.start_time = datetime.now()
+    event_loop = get_event_loop()
+    BOT.TASK = event_loop.create_task(taskScheduler())  # type: ignore
+    try:
+        await BOT.TASK
+    finally:
+        BOT.State.task_going = False  #<-- task crashes.
+# ⭐️ --- Helper function අවසානය --- ⭐️
+
+
 @colab_bot.on_callback_query()
 async def handle_options(client, callback_query):
     global BOT
-    data = callback_query.data  # ⭐️ 
+    data = callback_query.data # From your new __main__.py
 
     if data in ["leech", "mirror", "dir-leech"]:
         BOT.Mode.mode = callback_query.data
@@ -191,7 +224,7 @@ async def handle_options(client, callback_query):
             f"<b>◲ Tell Me The Type of {BOT.Mode.mode} You Want 🍕» </b>",
             reply_markup=keyboard,
         )
-    elif callback_query.data in ["normal", "zip", "unzip", "undzip"]:
+    elif data in ["normal", "zip", "unzip", "undzip"]:
         BOT.Mode.type = callback_query.data
         keyboard = InlineKeyboardMarkup(
             [
@@ -204,7 +237,7 @@ async def handle_options(client, callback_query):
         await callback_query.message.edit_text(
             "<b>◲ Is it a YTDL Link ? 🧐</b>", reply_markup=keyboard
         )
-    elif callback_query.data == "video":
+    elif data == "video":
         keyboard = InlineKeyboardMarkup(
             [
                 [
@@ -228,7 +261,7 @@ async def handle_options(client, callback_query):
             f"CHOOSE YOUR DESIRED OPTION ⚙️ »\n\n╭⌬ CONVERT » <code>{BOT.Setting.convert_video}</code>\n├⌬ OUTPUT FORMAT » <code>{BOT.Options.video_out}</code>\n╰⌬ OUTPUT QUALITY » <code>{BOT.Setting.convert_quality}</code>",
             reply_markup=keyboard,
         )
-    elif callback_query.data == "caption":
+    elif data == "caption":
         keyboard = InlineKeyboardMarkup(
             [
                 [
@@ -246,7 +279,7 @@ async def handle_options(client, callback_query):
             "CHOOSE YOUR CAPTION FONT STYLE »\n\n⌬ <code>Monospace</code>\n⌬ Regular\n⌬ <b>Bold</b>\n⌬ <i>Italic</i>\n⌬ <u>Underlined</u>",
             reply_markup=keyboard,
         )
-    elif callback_query.data == "thumb":
+    elif data == "thumb":
         keyboard = InlineKeyboardMarkup(
             [
                 [
@@ -262,124 +295,136 @@ async def handle_options(client, callback_query):
             f"CHOOSE YOUR THUMBNAIL SETTINGS »\n\n⌬ Thumbnail » {thmb_}\n⌬ Send an Image to set as Your Thumbnail",
             reply_markup=keyboard,
         )
-    elif callback_query.data == "del-thumb":
+    elif data == "del-thumb":
         if BOT.Setting.thumbnail:
             os.remove(Paths.THMB_PATH)
         BOT.Setting.thumbnail = False
         await send_settings(
             client, callback_query.message, callback_query.message.id, False
         )
-    elif callback_query.data == "set-prefix":
+    elif data == "set-prefix":
         await callback_query.message.edit_text(
             "Send a Text to Set as PREFIX by REPLYING THIS MESSAGE »"
         )
         BOT.State.prefix = True
-    elif callback_query.data == "set-suffix":
+    elif data == "set-suffix":
         await callback_query.message.edit_text(
             "Send a Text to Set as SUFFIX by REPLYING THIS MESSAGE »"
         )
         BOT.State.suffix = True
-    elif callback_query.data in [
+    elif data in [
         "code-Monospace",
         "p-Regular",
         "b-Bold",
         "i-Italic",
         "u-Underlined",
     ]:
-        res = callback_query.data.split("-")
+        res = data.split("-")
         BOT.Options.caption = res[0]
         BOT.Setting.caption = res[1]
         await send_settings(
             client, callback_query.message, callback_query.message.id, False
         )
-    elif callback_query.data in ["convert-true", "convert-false", "mp4", "mkv", "q-High", "q-Low"]:
-        if callback_query.data in ["convert-true", "convert-false"]:
+    elif data in ["convert-true", "convert-false", "mp4", "mkv", "q-High", "q-Low"]:
+        if data in ["convert-true", "convert-false"]:
             BOT.Options.convert_video = (
-                True if callback_query.data == "convert-true" else False
+                True if data == "convert-true" else False
             )
             BOT.Setting.convert_video = (
-                "Yes" if callback_query.data == "convert-true" else "No"
+                "Yes" if data == "convert-true" else "No"
             )
-        elif callback_query.data in ["q-High", "q-Low"] :
-            BOT.Setting.convert_quality = callback_query.data.split("-")[-1]
+        elif data in ["q-High", "q-Low"] :
+            BOT.Setting.convert_quality = data.split("-")[-1]
             BOT.Options.convert_quality = True if BOT.Setting.convert_quality == "High" else False
             await send_settings(
             client, callback_query.message, callback_query.message.id, False
         )
         else:
-            BOT.Options.video_out = callback_query.data
+            BOT.Options.video_out = data
         await send_settings(
             client, callback_query.message, callback_query.message.id, False
         )
-    elif callback_query.data in ["media", "document"]:
-        BOT.Options.stream_upload = True if callback_query.data == "media" else False
+    elif data in ["media", "document"]:
+        BOT.Options.stream_upload = True if data == "media" else False
         BOT.Setting.stream_upload = (
-            "Media" if callback_query.data == "media" else "Document"
+            "Media" if data == "media" else "Document"
         )
         await send_settings(
             client, callback_query.message, callback_query.message.id, False
         )
 
-    elif callback_query.data == "close":
+    elif data == "close":
         await callback_query.message.delete()
-    elif callback_query.data == "back":
+    elif data == "back":
         await send_settings(
             client, callback_query.message, callback_query.message.id, False
         )
 
     # @main Triggering Actual Leech Functions
-    elif callback_query.data in ["ytdl-true", "ytdl-false"]:
-        BOT.Mode.ytdl = True if callback_query.data == "ytdl-true" else False
-        await callback_query.message.delete()
-        await colab_bot.delete_messages(
-            chat_id=callback_query.message.chat.id,
-            message_ids=callback_query.message.reply_to_message_id,
+    # ⭐️ --- YTDL Quality මෙනු එක සඳහා සම්පූර්ණ Logic එක --- ⭐️
+    elif data == "ytdl-true":
+        BOT.Mode.ytdl = True
+        # YTDL Quality සඳහා නව මෙනු (Menu) එක
+        keyboard = InlineKeyboardMarkup(
+            [
+                [InlineKeyboardButton("Video - Best (Max 1080p)", callback_data="ytdl-1080")],
+                [InlineKeyboardButton("Video - 4K (If available)", callback_data="ytdl-4k")],
+                [InlineKeyboardButton("Audio - MP3 (Convert)", callback_data="ytdl-audio-mp3")],
+                [InlineKeyboardButton("Audio - WAV (Convert)", callback_data="ytdl-audio-wav")],
+                [InlineKeyboardButton("Audio - Original (Fastest)", callback_data="ytdl-audio-original")]
+            ]
         )
-        MSG.status_msg = await colab_bot.send_message(
-            chat_id=OWNER,
-            text="#STARTING_TASK\n\n**Starting your task in a few Seconds...🦐**",
-            reply_markup=InlineKeyboardMarkup(
-                [
-                    [InlineKeyboardButton("Cancel ❌", callback_data="cancel")],
-                ]
-            ),
+        await callback_query.message.edit_text(
+            "<b>◲ Choose YTDL Quality 📹 / 🎵 »</b>", reply_markup=keyboard
         )
-        BOT.State.task_going = True
-        BOT.State.started = False
-        BotTimes.start_time = datetime.now()
-        event_loop = get_event_loop()
-        BOT.TASK = event_loop.create_task(taskScheduler())  # type: ignore
-        try:
-            await BOT.TASK
-        finally:
-            BOT.State.task_going = False  #<-- task crashes.
 
-    # ⭐️ --- NEW: Post-Processing Callback Handlers --- ⭐️
+    elif data == "ytdl-false":
+        BOT.Mode.ytdl = False
+        await trigger_task_scheduler(callback_query) # Helper function එක call කිරීම
+
+    # YTDL Quality මෙනු එක සඳහා නව Callback Handlers
+    # ⭐️ --- FIX 1: "ytdl-audio-original" මෙහි එක් කරන ලදී --- ⭐️
+    elif data in ["ytdl-1080", "ytdl-4k", "ytdl-audio-mp3", "ytdl-audio-wav", "ytdl-audio-original"]:
+        if data == "ytdl-1080":
+            BOT.Options.ytdl_format = "bestvideo[height<=1080]+bestaudio/best[height<=1080]"
+            BOT.Options.audio_format = None # මෙය වීඩියෝවක්
+        elif data == "ytdl-4k":
+            BOT.Options.ytdl_format = "bestvideo[height<=2160]+bestaudio/best[height<=2160]"
+            BOT.Options.audio_format = None # මෙය වීඩියෝවක්
+        elif data == "ytdl-audio-mp3":
+            BOT.Options.ytdl_format = "bestaudio/best" # හොඳම audio එක පමණක්
+            BOT.Options.audio_format = "mp3" # mp3 වලට convert කරන්න
+        elif data == "ytdl-audio-wav":
+            BOT.Options.ytdl_format = "bestaudio/best" # හොඳම audio එක පමණක්
+            BOT.Options.audio_format = "wav" # wav වලට convert කරන්න
+        # ⭐️ --- FIX 2: `callback_query.data` -> `data` ලෙස වෙනස් කරන ලදී --- ⭐️
+        elif data == "ytdl-audio-original":
+            BOT.Options.ytdl_format = "bestaudio/best" # හොඳම audio එක පමණක්
+            BOT.Options.audio_format = "original" # convert නොකරන්න
+        
+        # දැන් කාර්යය ආරම්භ කරන්න
+        await trigger_task_scheduler(callback_query)
+
+    # ⭐️ --- Post-Processing Callbacks (ඔබගේ කේතය) --- ⭐️
     elif data == "post_process_upload":
-        await callback_query.message.delete()
-
-        # ⭐️ --- FIX: START TASK STATE --- ⭐️
+        # ⭐️ --- FIX 3: `MESSAGE_ID_INVALID` දෝෂය නිරාකරණය කර ඇත (`delete` -> `edit_text`) --- ⭐️
+        await callback_query.message.edit_text("🚀 **Preparing to upload...**")
         BOT.State.task_going = True
-
         upload_finished = Event()
         await Leech(BOT.Options.final_leech_path, BOT.Options.is_leech_folder, upload_finished)
         await upload_finished.wait()
         await SendLogs(True)
-
-        # ⭐️ --- FIX: END TASK STATE --- ⭐️
         BOT.State.task_going = False
 
     elif data == "post_process_meta":
-
-        # ⭐️ --- FIX: START TASK STATE --- ⭐️
         BOT.State.task_going = True
-
-        await callback_query.message.edit_text("🔎 **Searching for video file to process...**")
+        await callback_query.message.edit_text("🔎 *Searching for video file to process...*")
         leech_path = BOT.Options.final_leech_path
         video_files = [f for f in glob.glob(os.path.join(leech_path, '*.*')) if f.lower().endswith(('.mkv', '.mp4', '.webm'))]
 
         if not video_files:
             await callback_query.message.edit_text("❌ **Error:** No video file found to change metadata.")
+            BOT.State.task_going = False # ⭐️ Task state reset
             return
             
         video_file = video_files[0]
@@ -387,7 +432,10 @@ async def handle_options(client, callback_query):
         new_metadata = {
             "title": f"Encoded by {OWNER}",
             "comment": "Downloaded via @YourBotUsername",
-            "encoder": "Kavindu AJ"
+            "encoder": "Kavindu AJ",
+            "copyright": "© 2025 H-Donghua",
+            "description": "4K video produced by Tencent Video for WeTV",
+            "publisher": "https://h-donghua.xyz/"   
         }
         
         processed_path = os.path.join(Paths.WORK_PATH, "processed")
@@ -411,53 +459,43 @@ async def handle_options(client, callback_query):
 
         await upload_finished.wait()
         await SendLogs(True)
-
-        # ⭐️ --- FIX: END TASK STATE --- ⭐️
         BOT.State.task_going = False
 
     elif data == "post_process_subs":
-
-        # ⭐️ --- FIX: START TASK STATE --- ⭐️
         BOT.State.task_going = True
-
-
-        await callback_query.message.edit_text("🔎 *Searching for subtitles...*")
+        await callback_query.message.edit_text("🔎 **Searching for subtitles...**")
         leech_path = BOT.Options.final_leech_path
         video_files = [f for f in glob.glob(os.path.join(leech_path, '*.*')) if f.lower().endswith(('.mkv', '.mp4'))]
 
         if not video_files:
             await callback_query.message.edit_text("❌ **Error:** No video file found.")
+            BOT.State.task_going = False # ⭐️ Task state reset
             return
-       
+        
         video_file = video_files[0]
-       
+        logging.info("Subtitle extraction logic runs here...")
         final_upload_path = os.path.join(Paths.WORK_PATH, "final_upload")
         if os.path.exists(final_upload_path): shutil.rmtree(final_upload_path)
         os.makedirs(final_upload_path, exist_ok=True)
-       
+        
         for vf in video_files: shutil.copy(vf, final_upload_path)
-           
+            
         extracted_sub_file = extract_subtitles(video_file, 2, final_upload_path)
-       
+        
         if extracted_sub_file:
             await callback_query.message.edit_text("✅ **Subtitle Extracted!** Uploading video and subtitle...")
         else:
             await callback_query.message.edit_text("⚠️ **Warning:** Could not extract subtitles. Uploading video only.")
-       
+        
         upload_finished = Event()
         await Leech(final_upload_path, True, upload_finished)
         await upload_finished.wait()
-        try:
-            await callback_query.message.reply_text("`DEBUG:` Leech function finished. Now calling `SendLogs`.", parse_mode="markdown")
-        except Exception as e:
-            logging.error(f"Could not send debug message: {e}")        
         await SendLogs(True)
-
-    # ⭐️ --- FIX: END TASK STATE --- ⭐️
-        BOT.State.task_going = False       
+        BOT.State.task_going = False    
 
     elif data == "cancel":
         await cancelTask("User Cancelled !")
+
 
 @colab_bot.on_message(filters.photo & filters.private)
 async def handle_image(client, message):
