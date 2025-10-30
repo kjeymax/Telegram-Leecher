@@ -154,8 +154,15 @@ async def aria2_Download(link: str, num: int):
     Messages.status_head = f"<b>📥 DOWNLOADING FROM » </b><i>🔗Link {str(num).zfill(2)}</i>\n\n<b>🏷️ Name » </b><code>{name_d}</code>\n"
 
     command = [
-        "aria2c", "-x16", "--seed-time=0", "--summary-interval=1",
-        "--max-tries=3", "--console-log-level=notice", "-d", Paths.down_path,
+        "aria2c", 
+        "-x16", 
+        "-s16", 
+        "-k1M", 
+        "--seed-time=0", 
+        "--summary-interval=1",
+        "--max-tries=3", 
+        "--console-log-level=notice", 
+        "-d", Paths.down_path,
     ]
 
     for h in headers: command += ["--header", h]
