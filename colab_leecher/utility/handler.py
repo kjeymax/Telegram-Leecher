@@ -38,8 +38,6 @@ from colab_leecher.utility.helper import (
     sysINFO,
 )
 
-
-# ⭐️ --- DEFINITION CHANGED --- ⭐️
 async def Leech(folder_path: str, remove: bool, upload_event: Event = None):
     global BOT, BotTimes, Messages, Paths, Transfer
     
