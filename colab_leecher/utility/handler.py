@@ -1,5 +1,5 @@
 # copyright 2023 © Xron Trix | https://github.com/Xrontrix10
-# copyright 2023 © Kavindu AJ | https://github.com/kjeymax/Telegram-Leecher
+#Copyright (C) 2025 Kjeymax- https://github.com/kjeymax/Telegram-Leecher
 
 
 import os
