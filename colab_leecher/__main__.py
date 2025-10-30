@@ -1,9 +1,6 @@
 # copyright 2023 © Xron Trix | https://github.com/Xrontrix10
 #Copyright (C) 2025 Kjeymax- https://github.com/kjeymax/Telegram-Leecher
 
-# copyright 2023 © Xron Trix | https://github.com/Xrontrix10
-#Copyright (C) 2025 Kjeymax- https://github.com/kjeymax/Telegram-Leecher
-
 import logging, os
 from pyrogram import filters
 from datetime import datetime
