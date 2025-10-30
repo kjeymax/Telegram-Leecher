@@ -69,7 +69,7 @@ if os.path.exists("/content/sample_data"):
 
 cmd = "git clone https://github.com/kjeymax/Telegram-Leecher && bash /content/Telegram-Leecher/setup.sh"
 proc = subprocess.run(cmd, shell=True)
-cmd = "apt update && apt install aria2 ffmpeg megatools libtorrent-rasterbar-dev mkvtoolnix -y"
+cmd = "apt update && apt install aria2 ffmpeg megatools"
 proc = subprocess.run(cmd, shell=True)
 cmd = "pip3 install -r /content/Telegram-Leecher/requirements.txt"
 proc = subprocess.run(cmd, shell=True)
