@@ -33,7 +33,7 @@ async def YTDL_Status(link, num):
                     eta=YTDL.eta,
                     done=YTDL.done,
                     left=YTDL.left,
-                    engine="Xr-YtDL 🏮",
+                    engine="H-YTDL 🏮",
                 )
             except Exception:
                 pass
@@ -46,10 +46,23 @@ class MyLogger:
         pass
 
     def debug(self, msg):
-        global YTDL
+        global YTDL, BOT # ⭐️ BOT import කරන්න
+
         if "item" in str(msg):
             msgs = msg.split(" ")
             YTDL.header = f"\n⏳ __Getting Video Information {msgs[-3]} of {msgs[-1]}__"
+        
+        # ⭐️ --- "Converting" හෝ "Merging" පණිවිඩය පෙන්වීමට --- ⭐️
+        elif "[ExtractAudio]" in str(msg) or "[ffmpeg]" in str(msg):
+            # Check if we are in audio-only mode (and not 'original')
+            if BOT.Options.audio_format and BOT.Options.audio_format != "original": 
+                YTDL.header = f"\n🎵 **Converting to {BOT.Options.audio_format.upper()}...** (Please wait)"
+            
+            # Check if we are in video mode
+            elif not BOT.Options.audio_format:
+                YTDL.header = "\n📥 **Merging Fragments...** (This may take a moment)"
+        # ⭐️ --- වෙනස් කිරීම අවසන් --- ⭐️
+
 
     @staticmethod
     def warning(msg):
@@ -62,8 +75,9 @@ class MyLogger:
         pass
 
 
+# ⭐️ 
 def YouTubeDL(url):
-    global YTDL
+    global YTDL, BOT, Paths # ⭐️ Paths මෙහි import කරන්න (අත්‍යවශ්‍යයි)
 
     def my_hook(d):
         global YTDL
@@ -78,34 +92,75 @@ def YouTubeDL(url):
             if total_bytes:
                 percent = round((float(dl_bytes) * 100 / float(total_bytes)), 2)
 
-            YTDL.header = ""
+            YTDL.header = "" # Clear merging/converting message
             YTDL.speed = sizeUnit(speed) if speed else "N/A"
             YTDL.percentage = percent
             YTDL.eta = getTime(eta) if eta else "N/A"
             YTDL.done = sizeUnit(dl_bytes) if dl_bytes else "N/A"
             YTDL.left = sizeUnit(total_bytes) if total_bytes else "N/A"
+        
+        elif d["status"] == "finished":
+            if not BOT.Options.audio_format: # Video mode
+                YTDL.header = "\n📥 **Merging Fragments...** (This may take a moment)"
+            elif BOT.Options.audio_format and BOT.Options.audio_format != "original": # Audio convert mode
+                YTDL.header = f"\n🎵 **Converting to {BOT.Options.audio_format.upper()}...** (Please wait)"
+            # 'original' audio වලදී කිසිවක් පෙන්වීම අවශ්‍ය නැත.
 
         elif d["status"] == "downloading fragment":
-            # log_str = d["message"]
-            # print(log_str, end="")
             pass
         else:
             logging.info(d)
 
-    # Choose format based on quality setting
+    # -----------------------------------------------------
+    # ⭐️ --- YTDL Options සඳහා නව Logic --- ⭐️
+    # -----------------------------------------------------
+    
+    # 1. මූලික සැකසුම් (Common settings)
     ydl_opts = {
-        "format": "bestvideo+bestaudio/best",
-        "merge_output_format": "mp4",  # same as --merge-output-format mp4
         "writethumbnail": True,
-        "concurrent_fragment_downloads": 4,  # Set the maximum number of concurrent fragments
+        "concurrent_fragment_downloads": 4,
         "overwrites": True,
         "progress_hooks": [my_hook],
         "writesubtitles": "true",
-        "subtitleslangs": ["all"],# Enable subtitles download
-        "extractor_args": {"subtitlesformat": "srt"},  # Extract subtitles in SRT format
+        "subtitleslangs": ["all"],
+        "extractor_args": {"subtitlesformat": "srt"},
         "logger": MyLogger(),
         "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     }
+    
+    # ⭐️ --- COOKIE LOGIC (Cookie ගොනුව තිබේ නම් එය එක් කිරීම) --- ⭐️
+    if ospath.exists(Paths.COOKIES_PATH):
+        logging.info("YouTube Cookies file found. Using cookies...")
+        ydl_opts["cookiefile"] = Paths.COOKIES_PATH
+    else:
+        logging.warning("YouTube Cookies file not found. High-quality downloads may fail.")
+    # ⭐️ --- END COOKIE LOGIC --- ⭐️
+
+
+    audio_format = BOT.Options.audio_format
+    
+    if audio_format == "mp3" or audio_format == "wav":
+        # --- Audio-Only (Convert) Settings ---
+        ydl_opts["format"] = "bestaudio/best"
+        ydl_opts["merge_output_format"] = None
+        ydl_opts["postprocessors"] = [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': audio_format, # mp3 or wav
+            'preferredquality': '192', # mp3 quality
+        }]
+    
+    elif audio_format == "original":
+        # --- Audio-Only (Original) Settings ---
+        ydl_opts["format"] = "bestaudio/best"
+        ydl_opts["merge_output_format"] = None # No merge/convert
+    
+    else:
+        # --- Video Settings (default) ---
+        ydl_opts["format"] = BOT.Options.ytdl_format # 1080p or 4K
+        ydl_opts["merge_output_format"] = "mp4"
+
+    # ⭐️ --- නව Logic අවසානය --- ⭐️
+
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         if not ospath.exists(Paths.thumbnail_ytdl):
@@ -113,12 +168,26 @@ def YouTubeDL(url):
         try:
             info_dict = ydl.extract_info(url, download=False)
             YTDL.header = "⌛ __Please WAIT a bit...__"
+            
+            # --- Output Template (outtmpl) Logic ---
+            def get_output_template(base_path):
+                if audio_format == "mp3" or audio_format == "wav":
+                    return f"{base_path}.{audio_format}"
+                elif audio_format == "original":
+                     # We don't know the extension yet, so let yt-dlp decide
+                    return f"{base_path}.%(ext)s"
+                else: # Video
+                    return f"{base_path}.%(ext)s"
+
             if "_type" in info_dict and info_dict["_type"] == "playlist":
                 playlist_name = info_dict["title"] 
-                if not ospath.exists(ospath.join(Paths.down_path, playlist_name)):
-                    makedirs(ospath.join(Paths.down_path, playlist_name))
-                ydl_opts["outtmpl"] = {
-                    "default": f"{Paths.down_path}/{playlist_name}/%(title)s.%(ext)s",
+                playlist_path = ospath.join(Paths.down_path, playlist_name)
+                if not ospath.exists(playlist_path):
+                    makedirs(playlist_path)
+                
+                # ⭐️ --- BUG FIX: `ydl.params` ලෙස වෙනස් කරන ලදී --- ⭐️
+                ydl.params['outtmpl'] = {
+                    "default": get_output_template(f"{playlist_path}/%(title)s"),
                     "thumbnail": f"{Paths.thumbnail_ytdl}/%(id)s.%(ext)s",
                 }
                 for entry in info_dict["entries"]:
@@ -126,32 +195,31 @@ def YouTubeDL(url):
                     try:
                         ydl.download([video_url])
                     except yt_dlp.utils.DownloadError as e:
-                        if e.exc_info[0] == 36:
-                            ydl_opts["outtmpl"] = {
-                                "default": f"{Paths.down_path}/%(id)s.%(ext)s",
-                                "thumbnail": f"{Paths.thumbnail_ytdl}/%(id)s.%(ext)s",
-                            }
+                        if e.exc_info[0] == 36: # Filename too long
+                            # ⭐️ --- BUG FIX: `ydl.params` ලෙස වෙනස් කරන ලදී --- ⭐️
+                            ydl.params['outtmpl']["default"] = get_output_template(f"{playlist_path}/%(id)s")
                             ydl.download([video_url])
             else:
                 YTDL.header = ""
-                ydl_opts["outtmpl"] = {
-                    "default": f"{Paths.down_path}/%(id)s.%(ext)s",
+                # ⭐️ --- BUG FIX: `ydl.params` ලෙස වෙනස් කරන ලදී --- ⭐️
+                ydl.params['outtmpl'] = {
+                    "default": get_output_template(f"{Paths.down_path}/%(title)s"),
                     "thumbnail": f"{Paths.thumbnail_ytdl}/%(id)s.%(ext)s",
                 }
                 try:
                     ydl.download([url])
                 except yt_dlp.utils.DownloadError as e:
-                    if e.exc_info[0] == 36:
-                        ydl_opts["outtmpl"] = {
-                            "default": f"{Paths.down_path}/%(id)s.%(ext)s",
-                            "thumbnail": f"{Paths.thumbnail_ytdl}/%(id)s.%(ext)s",
-                        }
+                    if e.exc_info[0] == 36: # Filename too long
+                        # ⭐️ --- BUG FIX: `ydl.params` ලෙස වෙනස් කරන ලදී --- ⭐️
+                        ydl.params['outtmpl']["default"] = get_output_template(f"{Paths.down_path}/%(id)s")
                         ydl.download([url])
         except Exception as e:
             logging.error(f"YTDL ERROR: {e}")
 
 
+# ⭐️ --- මෙම සම්පූර්ණ ශ්‍රිතය (`get_YT_Name`) ප්‍රතිස්ථාපනය (REPLACE) කරන්න --- ⭐️
 async def get_YT_Name(link):
+    # දෝෂයක් (error) ආවිට task එක cancel නොකර, error එක log කර ඉදිරියට යයි
     with yt_dlp.YoutubeDL({"logger": MyLogger()}) as ydl:
         try:
             info = ydl.extract_info(link, download=False)
@@ -160,5 +228,6 @@ async def get_YT_Name(link):
             else:
                 return "UNKNOWN DOWNLOAD NAME"
         except Exception as e:
-            await cancelTask(f"Can't Download from this link. Because: {str(e)}")
-            return "UNKNOWN DOWNLOAD NAME"
+            logging.error(f"Can't get YTDL name for {link}. Error: {str(e)}")
+            # await cancelTask(f"Can't Download from this link. Because: {str(e)}") # ⭐️ Cancel ඉවත් කරන ලදී
+            return "UNKNOWN OR UNAVAILABLE VIDEO" # ⭐️ නව return අගය
