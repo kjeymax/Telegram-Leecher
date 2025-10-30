@@ -1,5 +1,5 @@
 # copyright 2023 © Xron Trix | https://github.com/Xrontrix10
-
+# copyright 2023 © Kavindu AJ | https://github.com/kjeymax/Telegram-Leecher
 
 import os
 import json
@@ -109,6 +109,87 @@ async def videoConverter(file: str):
         os.remove(file)
         return out_file
 
+
+# ⭐️ --- NEW FEATURES ADDED --- ⭐️
+
+# --- Function to change metadata using FFmpeg ---
+def change_metadata(input_file: str, output_file: str, metadata: dict) -> bool:
+    logo_file = None
+    if os.path.exists(Paths.THMB_PATH):
+        logo_file = Paths.THMB_PATH
+        logging.info("Found user's custom thumbnail. Using it as a cover.")
+    elif os.path.exists(Paths.HERO_IMAGE):
+        logo_file = Paths.HERO_IMAGE
+        logging.info("Using the default hero image as a cover.")
+
+    if not os.path.exists(input_file):
+        logging.error(f"Metadata Changer: Input file not found at {input_file}")
+        return False
+
+    cmd = ["ffmpeg", "-hide_banner", "-y", "-i", input_file]
+    
+    if logo_file:
+        cmd.extend(["-i", logo_file, "-map", "0:v:0", "-map", "0:a:0?", "-map", "1:v:0", "-c", "copy", "-disposition:v:1", "attached_pic"])
+    else:
+        cmd.extend(["-map", "0", "-c", "copy"])
+
+    cmd.extend(["-map_metadata", "-1"])
+
+    for key, value in metadata.items():
+        cmd.extend(["-metadata", f"{key}={value}"])
+
+    cmd.append(output_file)
+
+    try:
+        logging.info(f"Running FFmpeg command: {' '.join(cmd)}")
+        # ⭐️ FIX: Removed text=True and handle decoding in except block ⭐️
+        result = subprocess.run(cmd, check=True, capture_output=True)
+        logging.info(f"Successfully processed metadata. Output saved to: {output_file}")
+        return True
+    except subprocess.CalledProcessError as e:
+        # Decode stderr with error handling
+        error_output = e.stderr.decode('utf-8', errors='ignore')
+        logging.error(f"FFmpeg failed!\nCommand: {' '.join(cmd)}\nError: {error_output}")
+        return False
+
+# --- Function to extract subtitles using MKVToolNix ---
+def extract_subtitles(input_file: str, track_id: int, output_path: str) -> str | None:
+    if not os.path.exists(input_file):
+        logging.error(f"Subtitle Extractor: Input file not found at {input_file}")
+        return None
+        
+    base_name = os.path.splitext(os.path.basename(input_file))[0]
+    output_subtitle_file = os.path.join(output_path, f"{base_name}_track{track_id}.ass")
+
+    cmd = ["mkvextract", "tracks", input_file, f"{track_id}:{output_subtitle_file}"]
+    
+    try:
+        logging.info(f"Running mkvextract command: {' '.join(cmd)}")
+        # ⭐️ FIX: Removed text=True and handle decoding in except block ⭐️
+        result = subprocess.run(cmd, check=True, capture_output=True)
+        logging.info(f"Successfully extracted subtitle. Output saved to: {output_subtitle_file}")
+        return output_subtitle_file
+    except subprocess.CalledProcessError as e:
+        error_output = e.stderr.decode('utf-8', errors='ignore')
+        logging.error(f"mkvextract failed!\nCommand: {' '.join(cmd)}\nError: {error_output}")
+        return None
+
+# --- Function to get info using MKVToolNix ---
+def get_mkv_info(input_file: str) -> dict | None:
+    if not os.path.exists(input_file):
+        logging.error(f"MKV Info: Input file not found at {input_file}")
+        return None
+        
+    cmd = ["mkvinfo", "--output-charset", "UTF-8", input_file]
+    
+    try:
+        # ⭐️ FIX: Removed text=True and handle decoding in except block ⭐️
+        result = subprocess.run(cmd, check=True, capture_output=True)
+        return {"raw_output": result.stdout.decode('utf-8', errors='ignore')}
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        error_output = e.stderr.decode('utf-8', errors='ignore') if hasattr(e, 'stderr') and e.stderr else str(e)
+        logging.error(f"mkvinfo failed!\nCommand: {' '.join(cmd)}\nError: {error_output}")
+        return None
 
 async def sizeChecker(file_path, remove: bool):
     global Paths
