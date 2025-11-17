@@ -29,7 +29,7 @@ class BOT:
         unzip_pswd = ""
         final_leech_path = "" # ⭐️ 
         is_leech_folder = False # ⭐️ 
-        # ⭐️
+        is_split = True # ⭐️
         ytdl_format = "bestvideo[height<=1080]+bestaudio/best[height<=1080]" # Default
         audio_format = None # Default (i.e., not audio-only)
 
